@@ -2,10 +2,11 @@
 
 
 function Calculator (inputString) {
-
+  this.inputString = inputString;
+  this.tokenStream = this.lexer();
 }
 
-Calculator.prototype.lexer = function(inputString) {
+Calculator.prototype.lexer = function() {
   //function that breaks input string into tokens
   var tokenTypes = [
     ["NUMBER",    /^\d+/ ],
@@ -16,69 +17,103 @@ Calculator.prototype.lexer = function(inputString) {
     ["LPAREN",    /^\(/  ],
     ["RPAREN",    /^\)/  ]
   ];
-  var matched = true;
+  var matched = false;
   var tokens = [];
-    for (let i = 0; i < inputString.length; i++) {
-      for(let j = 0; j < tokenTypes.length; j++) {
-        if(tokenTypes[j][1].test(inputString(i))) {
+    for (let i = 0; i < this.inputString.length; i++) {
+      for (let j = 0; j < tokenTypes.length; j++) {
+        var token = tokenTypes[j][1]
+        if (token.test(this.inputString[i])) {
           matched = true;
-          tokens.push({name: tokenTypes[j][0], value: inputString[i]});
+          tokens.push({name: tokenTypes[j][0], value: this.inputString[i]});
+          break
         } else {
           matched = false;
         }
-      } if(!matched) {
-        throw new Error('Found unparseable token: ' + inputString(i));
       }
     }
-    console.log(tokens);
+      if (!matched) {
+        throw new Error('Found unparseable token: ' + this.inputString[i]);
+    }
     return tokens;
 }
 
 
 
 Calculator.prototype.peek = function() {
-  let i = 0;
-  var lexerIterator = function () {
-    return this.lexer[i];
-  };
- i++;
-
-  return lexerIterator;
+  return this.tokenStream[0] || null;
 }
 
 Calculator.prototype.get = function() {
-  let i = 0;
-  return this.lexer.splice(0,1);
+  var lex = this.lexer()
+  var result = lex.shift();
+  return result
 }
 
-const calc = new Calculator(1+2);
+const calc = new Calculator('3 * 5');
 
+
+console.log('calling peek' , calc.peek())
+
+
+function TreeNode(name, ...children) {
+  this.name = name
+  this.children = children;
+}
 
 
 Calculator.prototype.parseExpression = function() {
+    let term = this.perseTerm();
+    let a = this.parseA();
 
-}
-
-Calculator.prototype.parseExpression = function() {
-
+  return new TreeNode(inputString, term, a);
 }
 
 Calculator.prototype.parseA = function() {
+  //use peek to see what the nex
+  var nextToken = this.peek();
+  if (nextToken.name === 'ADD') {
+    this.get();
+    return new TreeNode("aNode" + nextToken.name, this.parseTerm(), this.parseA());
+  } else if (nextToken.name === 'SUB') {
+      this.get();
+      return new TreeNode("aNode" + nextToken.name, this.parseTerm(), this.parseA());
+  } else {
+    return new TreeNode ('aEpsilon')
+  }
 
 }
 
 Calculator.prototype.parseTerm = function() {
-
+  //input string === something at parse term
+  var b = this.parseB()
+  var factor = this.parseFactor()
+  return new TreeNode('Term', b, factor);
 }
 
 Calculator.prototype.parseB = function() {
+var nextToken = this.peek();
+  if (nextToken.name === 'MUL') {
+    this.get();
+    return new TreeNode("bNode" + nextToken.name, this.parseTerm(), this.parseA());
+  } else if (nextToken.name === 'DIV') {
+      this.get();
+      return new TreeNode("bNode" + nextToken.name, this.parseTerm(), this.parseA());
+  } else {
+    return new TreeNode ('aEpsilon')
+  }
 
 }
 
 Calculator.prototype.parseFactor = function() {
+ //if obj.name is equal to a number then we use parsefactor
+var nextToken = this.peek();
+if (nextToken.name === 'NUMBER') {
+  this.get();
+  return new TreeNode ('Number' + nextToken.value)
+} else {
+    return new TreeNode('Expression' + nextToken.name, this.parseTerm(), this.parseA());
+}
 
 }
 
-function TreeNode(name, ...children) {
 
-}
